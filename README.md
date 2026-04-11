@@ -3,6 +3,8 @@
 Personal project to build a Streamlit dashboard on 10 years of personal chess.com data.
 Data Source: Chess.com API  
 
+![Dashboard Preview](assets/header.png)
+
 ## Methodology
 
 1. Download raw monthly game archives from Chess.com API  
