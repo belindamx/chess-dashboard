@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.venv/
+
+# Secrets
+.env
+
+# Mac
+.DS_Store
+**/.DS_Store
+
+# Raw JSON — large and regenerable via scripts/download_data.py
+data/raw/
+
+# data/processed/ is intentionally tracked so the dashboard works out of the box
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Claude Code local config
+.claude/
