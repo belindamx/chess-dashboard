@@ -3,6 +3,8 @@
 Personal project to build a Streamlit dashboard on 10 years of personal chess.com data.
 Data Source: Chess.com API  
 
+**Link:** https://belinda-chess.streamlit.app/ 
+
 ![Dashboard Preview](assets/header.jpg)
 
 ## Methodology
