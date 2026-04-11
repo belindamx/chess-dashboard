@@ -3,7 +3,7 @@
 ## Live App
 https://belinda-chess.streamlit.app/
 
-Personal project to build a Streamlit dashboard on 10 years of personal chess.com data.
+Personal project to build a Streamlit dashboard on 10 years of chess.com data.
 Data Source: Chess.com API  
 
 ![Dashboard Preview](assets/header.jpg)
