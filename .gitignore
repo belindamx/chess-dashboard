@@ -1,19 +1,19 @@
-# Python
+# python
 __pycache__/
 *.pyc
 
-# Virtual environment
+# virtual environment
 venv/
 .venv/
 
-# Secrets
+# secrets
 .env
 
-# Mac
+# mac
 .DS_Store
 **/.DS_Store
 
-# Raw JSON — large and regenerable via scripts/download_data.py
+# raw JSON — large and regenerable via scripts/download_data.py
 data/raw/
 
 # data/processed/ is intentionally tracked so the dashboard works out of the box
