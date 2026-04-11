@@ -707,7 +707,7 @@ def hero_html(username: str, span: int, k: dict) -> str:
 def journey_html() -> str:
     unlocked = [
         ("🏁", "2004", "First chess tournament. Lost every game."),
-        ("⭐", "2007", "Named to the US Chess Federation published Top 100 Girls Under 13"),
+        ("⭐", "2007", "US Chess Federation Top 100 Girls Under 13"),
         ("💻", "2016", "Joined Chess.com"),
         ("📈", "2026", "32k+ games across 10 years"),
     ]
