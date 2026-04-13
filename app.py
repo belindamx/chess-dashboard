@@ -941,6 +941,27 @@ def compute_heatmap(key: str, df: pd.DataFrame):
 
 
 @st.cache_data(show_spinner=False)
+def compute_rating_journey(key: str, df: pd.DataFrame):
+    if not {"end_date", "my_rating", "time_class"}.issubset(df.columns):
+        return None
+    plot = (
+        df[df["time_class"].isin(["bullet", "blitz", "rapid"])]
+        .dropna(subset=["end_date", "my_rating"])
+    )
+    if not len(plot):
+        return None
+    # Keep at most 400 evenly-spaced rows per format — no gaps, preserves curve shape
+    def _thin(g):
+        step = max(1, len(g) // 400)
+        return g.iloc[::step]
+    return (
+        plot.groupby("time_class", group_keys=False)
+        .apply(_thin)
+        .reset_index(drop=True)
+    )
+
+
+@st.cache_data(show_spinner=False)
 def compute_clusters(key: str, df: pd.DataFrame):
     if not {"tc_secs", "hour"}.issubset(df.columns):
         return None
@@ -1061,10 +1082,9 @@ def main():
 
     t_over, t_habit, t_journey = st.tabs(["Overview", "Habits", "Journey"])
 
-    api_stats = fetch_player_stats(username)
-
     # overview
     with t_over:
+        api_stats = fetch_player_stats(username)
         col_ins, col_chart = st.columns([1, 2.2])
 
         with col_ins:
@@ -1094,29 +1114,25 @@ def main():
         with col_chart:
             st.markdown(section_html("Rating journey", "Bullet · Blitz · Rapid"),
                         unsafe_allow_html=True)
-            if "end_date" in fdf.columns and "my_rating" in fdf.columns and "time_class" in fdf.columns:
-                plot = (
-                    fdf[fdf["time_class"].isin(["bullet", "blitz", "rapid"])]
-                    .dropna(subset=["end_date", "my_rating"])
-                )
-                if len(plot):
-                    chart = (
-                        alt.Chart(plot)
-                        .mark_line(strokeWidth=2, opacity=0.9)
-                        .encode(
-                            x=alt.X("end_date:T", title=None),
-                            y=alt.Y("my_rating:Q", title="Rating",
-                                    scale=alt.Scale(zero=False)),
-                            color=alt.Color("time_class:N", title="Format",
-                                            scale=alt.Scale(
-                                                domain=["bullet", "blitz", "rapid"],
-                                                range=["#2ec4b6", "#f4a261", "#3B82F6"],
-                                            )),
-                            tooltip=["end_date:T", "my_rating:Q", "time_class:N"],
-                        )
-                        .properties(height=360)
+            plot = compute_rating_journey(fkey, fdf)
+            if plot is not None:
+                chart = (
+                    alt.Chart(plot)
+                    .mark_line(strokeWidth=2, opacity=0.9)
+                    .encode(
+                        x=alt.X("end_date:T", title=None),
+                        y=alt.Y("my_rating:Q", title="Rating",
+                                scale=alt.Scale(zero=False)),
+                        color=alt.Color("time_class:N", title="Format",
+                                        scale=alt.Scale(
+                                            domain=["bullet", "blitz", "rapid"],
+                                            range=["#2ec4b6", "#f4a261", "#3B82F6"],
+                                        )),
+                        tooltip=["end_date:T", "my_rating:Q", "time_class:N"],
                     )
-                    st.altair_chart(chart, use_container_width=True)
+                    .properties(height=360)
+                )
+                st.altair_chart(chart, use_container_width=True)
 
         if api_stats:
             st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
