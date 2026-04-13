@@ -1004,15 +1004,12 @@ def compute_rating_journey(key: str, df: pd.DataFrame):
     )
     if not len(plot):
         return None
-    # Keep at most 400 evenly-spaced rows per format — no gaps, preserves curve shape
-    def _thin(g):
+    # Keep at most 400 evenly-spaced rows per format — stable across pandas versions
+    parts = []
+    for _, g in plot.groupby("time_class"):
         step = max(1, len(g) // 400)
-        return g.iloc[::step]
-    return (
-        plot.groupby("time_class", group_keys=False)
-        .apply(_thin)
-        .reset_index(drop=True)
-    )
+        parts.append(g.iloc[::step])
+    return pd.concat(parts).reset_index(drop=True)
 
 
 @st.cache_data(show_spinner=False)
