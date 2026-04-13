@@ -6,8 +6,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import altair as alt
-import urllib.request
-import json
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
@@ -21,8 +19,8 @@ ACCENT    = "#2ec4b6"
 WIN_C     = "#52b788"
 LOSS_C    = "#e76f51"
 DRAW_C    = "#f4a261"
-TC_COLORS = {"bullet": "#2ec4b6", "blitz": "#f4a261", "rapid": "#3B82F6", "daily": "#9CA3AF"}
-PALETTE   = ["#2ec4b6", "#f4a261", "#3B82F6", "#9CA3AF"]
+TC_COLORS = {"bullet": "#2ec4b6", "blitz": "#f4a261", "rapid": "#3B82F6"}
+PALETTE   = ["#2ec4b6", "#f4a261", "#3B82F6"]
 CLUSTER_C = ["#2ec4b6", "#f4a261", "#7C3AED", "#e76f51"]
 N_CLUSTERS = 4
 _N_CLUSTERS_FIT = 5
@@ -340,11 +338,20 @@ html, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 .fmt-card {
     flex: 1; background: #ffffff; border: 2px solid #b8d4e0;
     border-radius: 4px; overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    cursor: default;
 }
+.fmt-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(46,196,182,0.18);
+    border-color: #2ec4b6;
+}
+.fmt-card:hover .fmt-card-header { background: #c2e8ec; }
 .fmt-card-header {
     background: #d4eef2; padding: 10px 16px;
     border-bottom: 2px solid #b8d4e0;
     display: flex; align-items: center; gap: 8px;
+    transition: background 0.15s ease;
 }
 .fmt-tc-icon { font-size: 18px; line-height: 1; }
 .fmt-tc-name {
@@ -364,6 +371,13 @@ html, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 .cc {
     flex: 1; background: #ffffff; border: 2px solid #b8d4e0;
     border-radius: 4px; padding: 18px 16px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    cursor: default;
+}
+.cc:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(46,196,182,0.18);
+    border-color: #2ec4b6;
 }
 .cc-badge {
     display: inline-flex; align-items: center; justify-content: center;
@@ -390,11 +404,11 @@ html, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 /* ── Journey tab ── */
 .journey-wrap {
     position: relative;
-    padding: 40px 0 60px;
+    padding: 16px 0 24px;
     overflow-x: auto;
 }
 .journey-player {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -408,7 +422,7 @@ html, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     align-items: flex-start;
     gap: 0;
     position: relative;
-    padding-bottom: 16px;
+    padding-bottom: 8px;
     min-width: 700px;
 }
 .journey-node-wrap {
@@ -418,7 +432,6 @@ html, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     flex: 1;
     position: relative;
 }
-/* dashed connector between nodes */
 .journey-node-wrap:not(:last-child)::after {
     content: '';
     position: absolute;
@@ -473,6 +486,65 @@ html, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     opacity: 0.7;
     font-style: italic;
 }
+
+/* ── Hall of Shame ── */
+.shame-wrap {
+    display: flex; gap: 0;
+    border: 2px solid #b8d4e0; border-radius: 4px;
+    overflow: hidden; background: #ffffff;
+}
+.shame-img-col {
+    width: 200px; flex-shrink: 0;
+    border-right: 2px solid #b8d4e0;
+    overflow: hidden;
+}
+.shame-img-col img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shame-list { flex: 1; display: flex; flex-direction: column; }
+.shame-entry {
+    flex: 1; display: flex; align-items: center;
+    gap: 0;
+    padding: 0 20px 0 20px;
+    border-bottom: 2px solid #b8d4e0;
+    transition: background 0.12s;
+}
+.shame-entry:last-child { border-bottom: none; }
+.shame-entry:hover { background: #f0fafb; }
+.shame-entry:first-child { background: #f7fdfd; }
+.shame-entry:first-child:hover { background: #eef9f9; }
+.shame-rank {
+    flex: 0 0 44px;
+    height: 32px;
+    background: #1a2e35; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px; color: #2ec4b6;
+    margin-right: 20px;
+}
+.shame-acc {
+    flex: 0 0 180px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px; color: #5a7a85;
+    letter-spacing: 0.5px; line-height: 2;
+}
+.shame-acc span { color: #2ec4b6; }
+.shame-entry:first-child .shame-acc { color: #3a5a65; }
+.shame-entry:first-child .shame-acc span { text-shadow: 0 0 10px rgba(46,196,182,0.4); }
+.shame-meta {
+    flex: 1;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px; color: #5a7a85;
+    letter-spacing: 0.5px; line-height: 2;
+}
+.shame-link {
+    flex: 0 0 auto; margin-left: auto;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px; color: #1a2e35;
+    text-decoration: none; background: #2ec4b6;
+    padding: 7px 10px; box-shadow: 3px 3px 0 0 #1a9e92;
+    letter-spacing: 0.5px; white-space: nowrap;
+    transition: box-shadow 0.1s, transform 0.1s;
+}
+.shame-link:hover { box-shadow: 1px 1px 0 0 #1a9e92; transform: translate(2px, 2px); }
 </style>
 """
 
@@ -813,51 +885,32 @@ def get_csv_path(username: str) -> Path:
     return PROCESSED_DIR / f"{username}_games.csv"
 
 
-_FORMAT_KEYS = {
-    "chess_bullet": "Bullet",
-    "chess_blitz":  "Blitz",
-    "chess_rapid":  "Rapid",
-}
+_TC_ICONS = {"Bullet": "♟", "Blitz": "♞", "Rapid": "♝"}
 
-@st.cache_data(show_spinner=False, ttl=3600)
-def fetch_player_stats(username: str) -> list:
-    url = f"https://api.chess.com/pub/player/{username}/stats"
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "ChessExplorer/1.0"})
-        with urllib.request.urlopen(req, timeout=6) as resp:
-            raw = json.loads(resp.read().decode())
-    except Exception:
+@st.cache_data(show_spinner=False)
+def compute_format_stats(key: str, df: pd.DataFrame) -> list:
+    needed = {"time_class", "my_rating", "result_cat"}
+    if not needed.issubset(df.columns):
         return []
-
     rows = []
-    for key, label in _FORMAT_KEYS.items():
-        if key not in raw:
+    for tc, label in [("bullet", "Bullet"), ("blitz", "Blitz"), ("rapid", "Rapid")]:
+        g = df[df["time_class"] == tc].dropna(subset=["my_rating"])
+        if not len(g):
             continue
-        d       = raw[key]
-        best    = d.get("best", {}).get("rating")
-        current = d.get("last", {}).get("rating")
-        rec     = d.get("record", {})
-        wins    = rec.get("win",  0)
-        draws   = rec.get("draw", 0)
-        losses  = rec.get("loss", 0)
-        total   = wins + draws + losses
-        if total == 0 and not best:
-            continue
+        rec = g["result_cat"].value_counts() if "result_cat" in g.columns else pd.Series(dtype=int)
         rows.append({
             "format":  label,
-            "best":    best,
-            "current": current,
-            "wins":    wins,
-            "draws":   draws,
-            "losses":  losses,
-            "total":   total,
+            "best":    int(g["my_rating"].max()),
+            "current": int(g.sort_values("end_date")["my_rating"].iloc[-1]) if "end_date" in g.columns else None,
+            "wins":    int(rec.get("Win",  0)),
+            "draws":   int(rec.get("Draw", 0)),
+            "losses":  int(rec.get("Loss", 0)),
+            "total":   len(g),
         })
     return rows
 
 
-_TC_ICONS = {"Bullet": "♟", "Blitz": "♞", "Rapid": "♝", "Daily": "♜"}
-
-def api_stats_html(rows: list) -> str:
+def fmt_stats_html(rows: list) -> str:
     if not rows:
         return ""
     cards = []
@@ -882,6 +935,7 @@ def api_stats_html(rows: list) -> str:
             f'</div>'
         )
     return f'<div class="fmt-grid">{"".join(cards)}</div>'
+
 
 # cache computations
 @st.cache_data(show_spinner=False)
@@ -1044,6 +1098,9 @@ def main():
 
     data_key = f"{username}:{mtime}"
 
+    if "time_class" in df.columns:
+        df = df[df["time_class"] != "daily"]
+
     with st.sidebar:
         tc_opts = sorted(df["time_class"].dropna().unique()) if "time_class" in df.columns else []
         sel_tc  = st.multiselect("Time control", tc_opts, default=tc_opts)
@@ -1084,7 +1141,6 @@ def main():
 
     # overview
     with t_over:
-        api_stats = fetch_player_stats(username)
         col_ins, col_chart = st.columns([1, 2.2])
 
         with col_ins:
@@ -1120,7 +1176,8 @@ def main():
                     alt.Chart(plot)
                     .mark_line(strokeWidth=2, opacity=0.9)
                     .encode(
-                        x=alt.X("end_date:T", title=None),
+                        x=alt.X("end_date:T", title=None,
+                                axis=alt.Axis(format="%Y", tickCount="year", labelAngle=0)),
                         y=alt.Y("my_rating:Q", title="Rating",
                                 scale=alt.Scale(zero=False)),
                         color=alt.Color("time_class:N", title="Format",
@@ -1134,12 +1191,13 @@ def main():
                 )
                 st.altair_chart(chart, use_container_width=True)
 
-        if api_stats:
+        fmt_stats = compute_format_stats(data_key, df)
+        if fmt_stats:
             st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
             st.markdown(section_html("Ratings by format",
-                                     "Live from Chess.com API · Best and current rating with all-time record"),
+                                     "Peak and current rating · Bullet · Blitz · Rapid"),
                         unsafe_allow_html=True)
-            st.markdown(api_stats_html(api_stats), unsafe_allow_html=True)
+            st.markdown(fmt_stats_html(fmt_stats), unsafe_allow_html=True)
 
         st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
         if "month" in fdf.columns:
@@ -1285,6 +1343,43 @@ def main():
     with t_journey:
         st.markdown(section_html("Chess Journey", "Milestones unlocked and levels ahead"), unsafe_allow_html=True)
         st.markdown(journey_html(), unsafe_allow_html=True)
+
+        st.markdown(section_html("Hall of Shame", "3 least accurate losses on record"), unsafe_allow_html=True)
+        has_acc = "my_accuracy" in df.columns and df["my_accuracy"].notna().any()
+        if not has_acc:
+            st.caption("No accuracy data available in dataset.")
+        elif "game_url" not in df.columns:
+            st.caption("No game URL data available in dataset.")
+        else:
+            worst = df.dropna(subset=["my_accuracy", "game_url"])
+            if len(worst):
+                import base64
+                img_path = APP_DIR / "assets" / "game.png"
+                img_b64  = base64.b64encode(img_path.read_bytes()).decode()
+                top3 = worst[worst["result_cat"] == "Loss"].nsmallest(3, "my_accuracy")
+                ranks    = ["#1", "#2", "#3"]
+                entries = []
+                for rank, (_, row) in zip(ranks, top3.iterrows()):
+                    acc  = f'{row["my_accuracy"]:.1f}%'
+                    opp  = row.get("opponent_username", "Unknown")
+                    tc   = str(row.get("time_class", "")).title()
+                    date = str(row["end_date"])[:10] if pd.notna(row.get("end_date")) else ""
+                    url  = row["game_url"]
+                    entries.append(
+                        f'<div class="shame-entry">'
+                        f'<div class="shame-rank">{rank}</div>'
+                        f'<div class="shame-acc"><span>{acc}</span> accuracy</div>'
+                        f'<div class="shame-meta">vs {opp}<br>{tc} · {date}</div>'
+                        f'<a class="shame-link" href="{url}" target="_blank">▶ view game</a>'
+                        f'</div>'
+                    )
+                st.markdown(
+                    f'<div class="shame-wrap">'
+                    f'<div class="shame-img-col"><img src="data:image/png;base64,{img_b64}"></div>'
+                    f'<div class="shame-list">{"".join(entries)}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
 
 if __name__ == "__main__":
