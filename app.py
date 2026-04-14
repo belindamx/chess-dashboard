@@ -1431,6 +1431,7 @@ def main():
             import chess.svg as _chess_svg
             import base64 as _b64
             from bot import BelBot, fmt_move_history
+            import time as _time, random as _random
 
             _BOT_MODE = "Rapid Me"
             profile   = compute_style_profile(data_key, df)
@@ -1466,26 +1467,18 @@ def main():
                 if board.can_claim_draw():           return "Draw!"
                 return ""
 
-            def _push_player_move(mv, board, player_color):
-                """Phase 1: push only the player's move, flag BelBot to go next render."""
-                san = board.san(mv)
-                board.push(mv)
-                st.session_state.pb_last_move      = mv
-                st.session_state.pb_history.append((san, player_color == _chess.WHITE))
-                st.session_state.pb_belbot_pending = not bool(_game_over_msg(board))
-
             def _start_game(player_white: bool):
-                bot   = BelBot(profile, _BOT_MODE) if profile else None
-                board = _chess.Board()
-                st.session_state.pb_board        = board
-                st.session_state.pb_player_color = player_white
-                st.session_state.pb_last_move    = None
-                st.session_state.pb_history      = []
-                st.session_state.pb_explanation  = ""
+                bot_inst = BelBot(profile, _BOT_MODE) if profile else None
+                board    = _chess.Board()
+                st.session_state.pb_board          = board
+                st.session_state.pb_player_color   = player_white
+                st.session_state.pb_last_move      = None
+                st.session_state.pb_history        = []
+                st.session_state.pb_explanation    = ""
                 st.session_state.pb_started        = True
                 st.session_state.pb_belbot_pending = False
-                if not player_white and bot:
-                    mv, expl = bot.get_move(board)
+                if not player_white and bot_inst:
+                    mv, expl = bot_inst.get_move(board)
                     if mv:
                         san = board.san(mv)
                         board.push(mv)
@@ -1493,34 +1486,9 @@ def main():
                         st.session_state.pb_history.append((san, True))
                         st.session_state.pb_explanation = expl
 
-            if "pb_belbot_pending" not in st.session_state:
-                st.session_state.pb_belbot_pending = False
+            # ── Layout: settings column (left) + game area (right) ────────
+            col_ctrl, col_game = st.columns([1, 2.5], gap="large")
 
-            # ── Phase 2: BelBot responds (runs at top of render AFTER player move shown) ──
-            if st.session_state.pb_belbot_pending:
-                import time as _time, random as _random
-                board        = st.session_state.pb_board
-                player_color = st.session_state.pb_player_color
-                move_num     = board.fullmove_number
-                base         = 1.2 if move_num <= 6 else (1.8 if move_num <= 20 else 1.4)
-                delay        = base + _random.uniform(-0.4, 0.6)
-                with st.spinner("BelBot is thinking…"):
-                    _time.sleep(max(0.6, delay))
-                    bot    = BelBot(profile, _BOT_MODE)
-                    bot_mv, expl = bot.get_move(board)
-                if bot_mv:
-                    bot_san = board.san(bot_mv)
-                    board.push(bot_mv)
-                    st.session_state.pb_last_move   = bot_mv
-                    st.session_state.pb_history.append((bot_san, player_color != _chess.WHITE))
-                    st.session_state.pb_explanation = expl
-                st.session_state.pb_belbot_pending = False
-                st.rerun()
-
-            # ── Layout ────────────────────────────────────────────────────
-            col_board, col_ctrl = st.columns([1.5, 1], gap="large")
-
-            # ── Right: BelBot card + controls ─────────────────────────────
             with col_ctrl:
                 st.markdown(
                     f'<div class="pb-profile-card">'
@@ -1535,67 +1503,86 @@ def main():
                     f'</div></div>',
                     unsafe_allow_html=True,
                 )
-
                 st.markdown(section_html("Game Settings", ""), unsafe_allow_html=True)
                 color_choice = st.radio("Play as", ["White ♔", "Black ♚"], horizontal=True, key="pb_color_radio")
                 player_white = color_choice == "White ♔"
-
-                st.markdown(
-                    '<button onclick="document.querySelector(\'[data-testid=stButton] button\').click()" '
-                    'style="display:none"></button>',
-                    unsafe_allow_html=True,
-                )
                 if st.button("▶ New Game", use_container_width=True, key="pb_new_game", type="primary"):
                     _start_game(player_white)
                     st.rerun()
 
-                st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-                st.markdown(section_html("Move History", ""), unsafe_allow_html=True)
-                st.markdown(fmt_move_history(st.session_state.pb_history), unsafe_allow_html=True)
-
-                if st.session_state.pb_explanation:
-                    st.markdown(
-                        f'<div class="pb-explain">♟ <span>BelBot:</span> {st.session_state.pb_explanation}</div>',
-                        unsafe_allow_html=True,
-                    )
-
-            # ── Left: SVG board + dropdown move selector ───────────────────
-            with col_board:
+            # ── Game area — wrap in @st.fragment if available ──────────────
+            # @st.fragment scopes the rerun to this section only, so clicking
+            # "Move →" doesn't grey out the whole page. Inside the fragment,
+            # st.empty() deltas ARE streamed to the browser before time.sleep()
+            # completes, giving the player immediate visual feedback.
+            def _game_area():
                 board   = st.session_state.pb_board
                 started = st.session_state.pb_started
 
-                if not started or board is None:
-                    st.markdown(_render_board(_chess.Board()), unsafe_allow_html=True)
-                    st.markdown('<div class="pb-status-ok">← Choose a side and press ▶ New Game</div>', unsafe_allow_html=True)
-                else:
-                    player_color = st.session_state.pb_player_color
-                    perspective  = _chess.WHITE if player_color else _chess.BLACK
-                    lm           = st.session_state.pb_last_move
-                    over_msg     = _game_over_msg(board)
-                    is_my_turn   = (not over_msg) and board.turn == (_chess.WHITE if player_color else _chess.BLACK)
+                col_b, col_h = st.columns([1.5, 1], gap="large")
 
-                    st.markdown(_render_board(board, lm, perspective), unsafe_allow_html=True)
+                if not started or board is None:
+                    with col_b:
+                        st.markdown(_render_board(_chess.Board()), unsafe_allow_html=True)
+                        st.markdown(
+                            '<div class="pb-status-ok">← Choose a side and press ▶ New Game</div>',
+                            unsafe_allow_html=True,
+                        )
+                    return
+
+                player_color = st.session_state.pb_player_color
+                perspective  = _chess.WHITE if player_color else _chess.BLACK
+                lm           = st.session_state.pb_last_move
+                over_msg     = _game_over_msg(board)
+                is_my_turn   = (not over_msg) and board.turn == (
+                    _chess.WHITE if player_color else _chess.BLACK
+                )
+
+                # ── col_h first so history_ph/explain_ph exist when col_b runs ──
+                with col_h:
+                    st.markdown(section_html("Move History", ""), unsafe_allow_html=True)
+                    history_ph = st.empty()
+                    history_ph.markdown(
+                        fmt_move_history(st.session_state.pb_history),
+                        unsafe_allow_html=True,
+                    )
+                    explain_ph = st.empty()
+                    if st.session_state.pb_explanation:
+                        explain_ph.markdown(
+                            f'<div class="pb-explain">♟ <span>BelBot:</span> {st.session_state.pb_explanation}</div>',
+                            unsafe_allow_html=True,
+                        )
+
+                # ── col_b: board + move controls ───────────────────────────
+                with col_b:
+                    board_ph  = st.empty()
+                    status_ph = st.empty()
+
+                    board_ph.markdown(_render_board(board, lm, perspective), unsafe_allow_html=True)
 
                     if over_msg:
-                        st.markdown(f'<div class="pb-status-end">★ {over_msg}</div>', unsafe_allow_html=True)
+                        status_ph.markdown(
+                            f'<div class="pb-status-end">★ {over_msg}</div>',
+                            unsafe_allow_html=True,
+                        )
                     else:
                         check = " · Check!" if board.is_check() else ""
                         whose = "Your turn" if is_my_turn else "BelBot is thinking…"
-                        st.markdown(f'<div class="pb-status-ok">{whose}{check}</div>', unsafe_allow_html=True)
+                        status_ph.markdown(
+                            f'<div class="pb-status-ok">{whose}{check}</div>',
+                            unsafe_allow_html=True,
+                        )
 
-                    # ── Move dropdowns (your turn only) ───────────────────
                     if is_my_turn and not over_msg:
-                        # Build list of your pieces on the board
-                        my_color = _chess.WHITE if player_color else _chess.BLACK
+                        my_color  = _chess.WHITE if player_color else _chess.BLACK
                         my_pieces = []
                         for sq in _chess.SQUARES:
                             p = board.piece_at(sq)
                             if p and p.color == my_color:
-                                # only include pieces that have legal moves
                                 if any(mv.from_square == sq for mv in board.legal_moves):
-                                    sq_name  = _chess.square_name(sq)
-                                    sym      = GLYPHS.get(p.symbol(), '')
-                                    my_pieces.append(f"{sym} {sq_name.upper()}")
+                                    my_pieces.append(
+                                        f"{GLYPHS.get(p.symbol(),'')} {_chess.square_name(sq).upper()}"
+                                    )
 
                         dc1, dc2, dc3 = st.columns([2, 2, 1])
                         with dc1:
@@ -1605,17 +1592,13 @@ def main():
                                 key="pb_piece_sel",
                                 placeholder="Select piece…",
                             )
-                        # Get legal destinations for chosen piece
                         dest_options = []
                         if piece_choice:
-                            from_sq_name = piece_choice.split()[-1].lower()
-                            from_sq      = _chess.parse_square(from_sq_name)
-                            for mv in board.legal_moves:
-                                if mv.from_square == from_sq:
-                                    to_name = _chess.square_name(mv.to_square).upper()
-                                    dest_options.append(to_name)
-                            dest_options.sort()
-
+                            from_sq = _chess.parse_square(piece_choice.split()[-1].lower())
+                            dest_options = sorted(
+                                _chess.square_name(mv.to_square).upper()
+                                for mv in board.legal_moves if mv.from_square == from_sq
+                            )
                         with dc2:
                             dest_choice = st.selectbox(
                                 "To", dest_options,
@@ -1624,18 +1607,82 @@ def main():
                                 placeholder="Select square…",
                             )
                         with dc3:
-                            move_btn = st.button("Move →", use_container_width=True, key="pb_move_btn", type="primary")
+                            move_btn = st.button(
+                                "Move →", use_container_width=True,
+                                key="pb_move_btn", type="primary",
+                            )
 
                         if move_btn and piece_choice and dest_choice:
-                            from_sq_name = piece_choice.split()[-1].lower()
-                            to_sq_name   = dest_choice.lower()
-                            from_sq      = _chess.parse_square(from_sq_name)
-                            to_sq        = _chess.parse_square(to_sq_name)
+                            from_sq = _chess.parse_square(piece_choice.split()[-1].lower())
+                            to_sq   = _chess.parse_square(dest_choice.lower())
                             for mv in board.legal_moves:
                                 if mv.from_square == from_sq and mv.to_square == to_sq:
-                                    _push_player_move(mv, board, player_color)
-                                    st.rerun()  # immediately shows player's move
+
+                                    # ── Phase 1: player's move ─────────────
+                                    san = board.san(mv)
+                                    board.push(mv)
+                                    st.session_state.pb_last_move = mv
+                                    st.session_state.pb_history.append(
+                                        (san, player_color == _chess.WHITE)
+                                    )
+
+                                    board_ph.markdown(
+                                        _render_board(board, mv, perspective),
+                                        unsafe_allow_html=True,
+                                    )
+                                    status_ph.markdown(
+                                        '<div class="pb-status-ok">BelBot is thinking…</div>',
+                                        unsafe_allow_html=True,
+                                    )
+                                    history_ph.markdown(
+                                        fmt_move_history(st.session_state.pb_history),
+                                        unsafe_allow_html=True,
+                                    )
+
+                                    # ── Phase 2: BelBot responds ───────────
+                                    if not _game_over_msg(board):
+                                        move_num = board.fullmove_number
+                                        base  = 0.8 if move_num <= 6 else (1.0 if move_num <= 20 else 0.8)
+                                        delay = base + _random.uniform(-0.15, 0.25)
+                                        _time.sleep(max(0.5, delay))
+
+                                        bot_inst = BelBot(profile, _BOT_MODE)
+                                        bot_mv, expl = bot_inst.get_move(board)
+                                        if bot_mv:
+                                            bot_san = board.san(bot_mv)
+                                            board.push(bot_mv)
+                                            st.session_state.pb_last_move   = bot_mv
+                                            st.session_state.pb_history.append(
+                                                (bot_san, player_color != _chess.WHITE)
+                                            )
+                                            st.session_state.pb_explanation = expl
+
+                                            board_ph.markdown(
+                                                _render_board(board, bot_mv, perspective),
+                                                unsafe_allow_html=True,
+                                            )
+                                            history_ph.markdown(
+                                                fmt_move_history(st.session_state.pb_history),
+                                                unsafe_allow_html=True,
+                                            )
+                                            explain_ph.markdown(
+                                                f'<div class="pb-explain">♟ <span>BelBot:</span> {expl}</div>',
+                                                unsafe_allow_html=True,
+                                            )
+
+                                    status_ph.markdown(
+                                        '<div class="pb-status-ok">Your turn</div>',
+                                        unsafe_allow_html=True,
+                                    )
                                     break
+
+            # Wrap in @st.fragment if Streamlit ≥ 1.37 — prevents full-page
+            # grey-out on Move clicks and enables streaming st.empty() updates.
+            with col_game:
+                if hasattr(st, "fragment"):
+                    st.fragment(_game_area)()
+                else:
+                    _game_area()
 
         except Exception as e:
             st.error(f"Play Me error: {e}")
