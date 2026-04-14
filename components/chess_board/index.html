@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: monospace; font-size: 13px; padding: 8px; background: #f0f8f8; color: #1a2e35; }
+#status { margin-bottom: 6px; padding: 4px 8px; background: #2ec4b6; color: white; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="status">waiting for Streamlit…</div>
+<div id="fen"></div>
+
+<script>
+function send(type, extra) {
+  window.parent.postMessage(Object.assign({ type: type }, extra || {}), '*');
+}
+
+window.addEventListener('message', function(e) {
+  if (!e.data) return;
+  if (e.data.type === 'streamlit:render') {
+    document.getElementById('status').textContent = 'render received ✓';
+    document.getElementById('fen').textContent = 'FEN: ' + (e.data.args && e.data.args.fen || 'none');
+    send('streamlit:setFrameHeight', { height: 80 });
+  }
+});
+
+// Fire componentReady immediately on load
+window.addEventListener('load', function() {
+  send('streamlit:componentReady', { apiVersion: 1 });
+  send('streamlit:setFrameHeight', { height: 80 });
+});
+</script>
+</body>
+</html>
