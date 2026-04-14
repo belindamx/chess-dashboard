@@ -1584,7 +1584,7 @@ def main():
                                         f"{GLYPHS.get(p.symbol(),'')} {_chess.square_name(sq).upper()}"
                                     )
 
-                        dc1, dc2, dc3 = st.columns([2, 2, 1])
+                        dc1, dc2, dc3 = st.columns([2, 2, 1.5])
                         with dc1:
                             piece_choice = st.selectbox(
                                 "Piece", my_pieces,
