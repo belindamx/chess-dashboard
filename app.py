@@ -43,6 +43,11 @@ html, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 [data-testid="stSidebar"] {
     background: #1e3848 !important;
     border-right: 2px solid #2ec4b6 !important;
+    min-width: 200px !important;
+    max-width: 200px !important;
+}
+[data-testid="stSidebar"] > div:first-child {
+    width: 200px !important;
 }
 [data-testid="stSidebar"] * { color: #d8eef4 !important; }
 [data-testid="stSidebar"] .stTextInput input {
