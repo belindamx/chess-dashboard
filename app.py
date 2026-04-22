@@ -569,6 +569,13 @@ html, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 
 /* ── Mobile responsive ── */
 @media (max-width: 640px) {
+    /* Top 4 stat cards: 2×2 grid */
+    .stat-row { flex-wrap: wrap; }
+    .stat-block { flex: 1 1 45%; min-width: 0; border-right: 2px solid #b8d4e0 !important; }
+    .stat-block:nth-child(2n) { border-right: none !important; }
+    .stat-block:nth-child(n+3) { border-top: 2px solid #b8d4e0; }
+    .stat-val { font-size: 22px; }
+
     /* Header format cards: stack vertically */
     .fmt-grid { flex-wrap: wrap; }
     .fmt-card { flex: 1 1 100%; min-width: 0; }
@@ -806,7 +813,7 @@ def _avatar_html(size: int = 130) -> str:
 
 
 def hero_html(username: str, span: int, k: dict) -> str:
-    sub = "10 years of chess. Mostly bullet."
+    sub = "10 years of chess (mostly bullet)"
     return (
         f'<div class="hero-wrap">'
         f'<div class="hero-avatar">{_avatar_html()}</div>'
