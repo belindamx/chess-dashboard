@@ -569,6 +569,14 @@ html, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 
 /* ── Mobile responsive ── */
 @media (max-width: 640px) {
+    /* Hero header */
+    .hero-wrap { padding: 14px 16px; gap: 12px; }
+    .hero-avatar img,
+    .hero-avatar svg { width: 56px !important; height: 56px !important; }
+    .hero-name { font-size: 11px !important; }
+    .hero-eyebrow { font-size: 6px !important; }
+    .hero-sub { font-size: 10px; }
+
     /* Top 4 stat cards: 2×2 grid */
     .stat-row { flex-wrap: wrap; }
     .stat-block { flex: 1 1 45%; min-width: 0; border-right: 2px solid #b8d4e0 !important; }
