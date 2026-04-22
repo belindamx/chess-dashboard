@@ -566,6 +566,28 @@ html, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 .pb-history { background:#ffffff; border:2px solid #b8d4e0; border-radius:4px; padding:10px 14px; max-height:220px; overflow-y:auto; font-family:'Press Start 2P',monospace; font-size:7px; line-height:2.4; }
 .pb-status-ok  { font-family:'Press Start 2P',monospace; font-size:8px; color:#2ec4b6; letter-spacing:0.5px; line-height:2; padding:6px 0; }
 .pb-status-end { font-family:'Press Start 2P',monospace; font-size:8px; color:#e76f51; letter-spacing:0.5px; line-height:2; padding:6px 0; }
+
+/* ── Mobile responsive ── */
+@media (max-width: 640px) {
+    /* Header format cards: stack vertically */
+    .fmt-grid { flex-wrap: wrap; }
+    .fmt-card { flex: 1 1 100%; min-width: 0; }
+
+    /* Chess Journey: allow natural width, scroll if needed */
+    .journey-path { min-width: 0; flex-wrap: wrap; gap: 16px; }
+    .journey-node-wrap { flex: 0 0 calc(33% - 12px); }
+    .journey-node-wrap:not(:last-child)::after { display: none; }
+    .journey-desc { max-width: 90px; font-size: 10px; }
+
+    /* Hall of Shame: stack image on top */
+    .shame-wrap { flex-direction: column; }
+    .shame-img-col { width: 100%; height: 140px; border-right: none; border-bottom: 2px solid #b8d4e0; }
+    .shame-img-col img { object-position: top; }
+    .shame-entry { padding: 8px 12px; flex-wrap: wrap; gap: 6px; }
+    .shame-acc { flex: 1 1 100%; font-size: 7px; }
+    .shame-meta { flex: 1 1 100%; }
+    .shame-link { margin-left: 0; }
+}
 </style>
 """
 
