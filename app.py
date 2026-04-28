@@ -805,8 +805,8 @@ def cluster_grid_html(agg: pd.DataFrame) -> str:
 def _avatar_html(size: int = 130) -> str:
     """Prefer a real photo (avatar.jpg/png/gif); fall back to the pixel SVG."""
     import base64
-    for candidate in ["avatar.jpg", "avatar.png", "avatar.gif",
-                      "assets/avatar.png", "assets/avatar.jpg", "assets/avatar.gif"]:
+    for candidate in ["assets/avatar.png", "avatar.jpg", "avatar.png", "avatar.gif",
+                      "assets/avatar.jpg", "assets/avatar.gif"]:
         p = APP_DIR / candidate
         if p.exists():
             mime = "image/gif" if candidate.endswith(".gif") else (
@@ -824,7 +824,7 @@ def hero_html(username: str, span: int, k: dict) -> str:
     sub = "10 years of chess (mostly bullet)"
     return (
         f'<div class="hero-wrap">'
-        f'<div class="hero-avatar">{_avatar_html()}</div>'
+        f'<div class="hero-avatar">{_avatar_html(size=90)}</div>'
         f'<div class="hero-text">'
         f'<div class="hero-eyebrow">chess.com</div>'
         f'<div class="hero-name">{username} <span class="hero-accent">♟</span></div>'
